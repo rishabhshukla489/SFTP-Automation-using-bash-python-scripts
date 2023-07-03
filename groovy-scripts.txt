@@ -36,7 +36,7 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
     
 
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, password, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, password, remotepath)
     Process process = processBuilder.start()
 
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)
@@ -93,14 +93,14 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String filename = props.getProperty("document.dynamic.userdefined.DDP_FILENAME")
     String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
     
-    String scriptDirectory = "/opt/sftpBashscript/";
+    String scriptDirectory = "/sftpBashscript/";
     String tempFilePath = Paths.get(scriptDirectory, filename).toString();
     
     
     Files.copy(is, Paths.get(tempFilePath));
     
 
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, password, tempFilePath, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, password, tempFilePath, remotepath)
     Process process = processBuilder.start()
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)
     
@@ -156,7 +156,7 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
     String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
 
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, auth, password, remotepath)
     Process process = processBuilder.start()
 
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)
@@ -215,13 +215,13 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
     
     
-    String scriptDirectory = "/opt/sftpBashscript/";
+    String scriptDirectory = "/sftpBashscript/";
     String tempFilePath = Paths.get(scriptDirectory, filename).toString();
     
     
     Files.copy(is, Paths.get(tempFilePath));
     
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, tempFilePath, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, auth, password, tempFilePath, remotepath)
     Process process = processBuilder.start()
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)
     
@@ -280,7 +280,7 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String keypath = props.getProperty("document.dynamic.userdefined.DDP_KEYPATH")
     String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
 
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, keypath, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, auth, password, keypath, remotepath)
     Process process = processBuilder.start()
 
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)
@@ -340,13 +340,13 @@ for (int i = 0; i < dataContext.getDataCount(); i++) {
     String filename = props.getProperty("document.dynamic.userdefined.DDP_FILENAME")
     String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
 
-    String scriptDirectory = "/opt/sftpBashscript/";
+    String scriptDirectory = "/sftpBashscript/";
     String tempFilePath = Paths.get(scriptDirectory, filename).toString();
     
     
     Files.copy(is, Paths.get(tempFilePath));
     
-    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, keypath, tempFilePath, remotepath)
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/sftpBash.sh", protocol, op, host, username, auth, password, keypath, tempFilePath, remotepath)
     Process process = processBuilder.start()
 
     boolean completed = process.waitFor(5, TimeUnit.MINUTES)

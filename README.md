@@ -1,6 +1,12 @@
 # SFTP-Automation-using-bash-python-scripts
 Created bash, flask api and python script to automate sftp transfer in dell boomi to reduce cost of sftp connections by invoking the scripts from data process shape.
 <br>
+#For Boomi usage:
+<br>
+The script needs to be store in boomiserver and specify the name of file along with path in the script.
+<br>1 Add a set property shape to define dynamic document property as given below.
+<br>2 Add a custom scripting data process shape and invoke this script using groovy scripts provided in the files.
+<br>3 The data process shape will output the read data as document in the integration flow and throw an exception in case of error which can be handled seperately.
 <br>The bash script is developed to provide read and write operation for file transfer protocols : FTP and SFTP.
 <br>This uses a single bash script that has 6 functions as follows :
 <br>SFTP:

@@ -1,0 +1,374 @@
+Groovy scripts: 
+This is run using custom scripting in data process shape and it  invokes the main bash script and pass the arguments necessary for the data transfer by extracting the dynamic document properties specified in set property shape prior to this data process shape, as system arguments along with the script.
+For send operation this script takes in the data coming from the flow and saves it temporarily in a file (with name specified in DDP_FILENAME) at a location specified in the groovy script with the variable “scriptDirectory” and deletes it once the operation is completed. 
+This also throws an exception and terminates the process in cases : 
+Either a timeout occurs in which the script isn’t able to complete execution due to any reason in specified amount of time in minutes within the script.
+Or in case the script gives out error from errorstream.
+Or in case the script echoes error specified in the script pertaining to missing arguments.
+
+FTP : 
+ Read operation : 
+import java.util.Properties
+import java.io.InputStream
+import java.util.concurrent.TimeUnit
+import com.boomi.execution.ExecutionUtil; 
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i)
+    Properties props = dataContext.getProperties(i)
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    
+
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, password, remotepath)
+    Process process = processBuilder.start()
+
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error: The SFTP transfer exceeded the time limit.")
+    } else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+    
+    dataContext.storeStream(is, props)
+}
+
+
+Send operation : 
+
+import java.util.Properties
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i);
+    Properties props = dataContext.getProperties(i);
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String filename = props.getProperty("document.dynamic.userdefined.DDP_FILENAME")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    
+    String scriptDirectory = "/opt/sftpBashscript/";
+    String tempFilePath = Paths.get(scriptDirectory, filename).toString();
+    
+    
+    Files.copy(is, Paths.get(tempFilePath));
+    
+
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, password, tempFilePath, remotepath)
+    Process process = processBuilder.start()
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error:The sftp transfer exceeded the time limit.")
+    }
+    else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+	Files.deleteIfExists(Paths.get(tempFilePath))
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+    
+    Files.deleteIfExists(Paths.get(tempFilePath))
+    dataContext.storeStream(is, props);
+}
+
+SFTP (with password authentication):
+Read operation:
+
+import java.util.Properties
+import java.io.InputStream
+import java.util.concurrent.TimeUnit
+
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i);
+    Properties props = dataContext.getProperties(i);
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
+
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, remotepath)
+    Process process = processBuilder.start()
+
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error:The sftp transfer exceeded the time limit.")
+    }
+   else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+
+    dataContext.storeStream(is, props);
+}
+
+
+Send operation: 
+import java.util.Properties
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i);
+    Properties props = dataContext.getProperties(i);
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    String filename = props.getProperty("document.dynamic.userdefined.DDP_FILENAME")
+    String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
+    
+    
+    String scriptDirectory = "/opt/sftpBashscript/";
+    String tempFilePath = Paths.get(scriptDirectory, filename).toString();
+    
+    
+    Files.copy(is, Paths.get(tempFilePath));
+    
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, tempFilePath, remotepath)
+    Process process = processBuilder.start()
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error:The sftp transfer exceeded the time limit.")
+    }
+    else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+	Files.deleteIfExists(Paths.get(tempFilePath))
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+
+   
+    Files.deleteIfExists(Paths.get(tempFilePath))
+    dataContext.storeStream(is, props)
+}
+
+SFTP (with key authentication):
+Read operation:
+
+import java.util.Properties
+import java.io.InputStream
+import java.util.concurrent.TimeUnit
+
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i);
+    Properties props = dataContext.getProperties(i);
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    String keypath = props.getProperty("document.dynamic.userdefined.DDP_KEYPATH")
+    String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
+
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, keypath, remotepath)
+    Process process = processBuilder.start()
+
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error:The sftp transfer exceeded the time limit.")
+    }
+    else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+
+    dataContext.storeStream(is, props);
+}
+
+
+Send operation:
+
+import java.util.Properties
+import java.io.InputStream
+import java.nio.file.Files
+import java.nio.file.Paths
+import java.util.concurrent.TimeUnit
+
+private String readStream(InputStream stream) throws IOException {
+    StringBuilder sb = new StringBuilder()
+    BufferedReader reader = new BufferedReader(new InputStreamReader(stream))
+    String line
+    while ((line = reader.readLine()) != null) {
+        sb.append(line)
+        sb.append(System.lineSeparator())
+    }
+    reader.close()
+    return sb.toString()
+}
+
+for (int i = 0; i < dataContext.getDataCount(); i++) {
+    InputStream is = dataContext.getStream(i);
+    Properties props = dataContext.getProperties(i);
+    
+    String protocol = props.getProperty("document.dynamic.userdefined.DDP_PROTOCOL")
+    String op = props.getProperty("document.dynamic.userdefined.DDP_OP")
+    String host = props.getProperty("document.dynamic.userdefined.DDP_HOST")
+    String username = props.getProperty("document.dynamic.userdefined.DDP_USERNAME")
+    String password = props.getProperty("document.dynamic.userdefined.DDP_PASSWORD")
+    String keypath = props.getProperty("document.dynamic.userdefined.DDP_KEYPATH")
+    String remotepath = props.getProperty("document.dynamic.userdefined.DDP_REMOTEPATH")
+    String filename = props.getProperty("document.dynamic.userdefined.DDP_FILENAME")
+    String auth = props.getProperty("document.dynamic.userdefined.DDP_AUTH")
+
+    String scriptDirectory = "/opt/sftpBashscript/";
+    String tempFilePath = Paths.get(scriptDirectory, filename).toString();
+    
+    
+    Files.copy(is, Paths.get(tempFilePath));
+    
+    ProcessBuilder processBuilder = new ProcessBuilder("bash", "/opt/sftpBashscript/sftpBashBlackline1.sh", protocol, op, host, username, auth, password, keypath, tempFilePath, remotepath)
+    Process process = processBuilder.start()
+
+    boolean completed = process.waitFor(5, TimeUnit.MINUTES)
+    
+    if (!completed) {
+        process.destroy()
+        throw new RuntimeException("Error:The sftp transfer exceeded the time limit.")
+    }
+    else {
+        int exitValue = process.exitValue()
+        if (exitValue != 0) {
+            InputStream errorStream = process.getErrorStream()
+            is = process.getInputStream()
+	Files.deleteIfExists(Paths.get(tempFilePath))
+            throw new RuntimeException(readStream(errorStream)+" | "+readStream(is))
+        }
+        else{
+            is = process.getInputStream()
+        }
+    }
+    
+    
+    Files.deleteIfExists(Paths.get(tempFilePath))
+    dataContext.storeStream(is, props);
+}
